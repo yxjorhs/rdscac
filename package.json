@@ -13,7 +13,8 @@
     "release": "npm run build && standard-version && git push --follow-tags && npm publish",
     "test": "mocha",
     "test-cov": "nyc mocha",
-    "eslint": "eslint --fix src/**/*.ts"
+    "eslint": "eslint src/**/*.ts",
+    "eslint-fix": "eslint --fix src/**/*.ts"
   },
   "dependencies": {
     "redlock": "^4.2.0"
