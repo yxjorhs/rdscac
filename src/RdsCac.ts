@@ -33,7 +33,7 @@ const WAIT_INTERVAL = 100;
 /**
  * Redis Cache
  */
-export class RdsCac {
+export class RdsCac<EV extends string> {
   private evKeyDic: EvKeyDict;
 
   /**
@@ -68,7 +68,7 @@ export class RdsCac {
   public async bindEvGet<T>(
       key: string,
       source: () => Promise<T>,
-      ev: string[],
+      ev: EV[],
   ): Promise<T> {
     return this.getGeneric(key, source, ev, false);
   }
@@ -84,7 +84,7 @@ export class RdsCac {
   private async getGeneric<T>(
       key: string,
       source: () => Promise<T>,
-      refreshEvent: string[],
+      refreshEvent: EV[],
       refreshForce: boolean,
   ): Promise<T> {
     key = this.keyGet(key);
@@ -190,7 +190,7 @@ export class RdsCac {
    * refresh cache from source base on refreshEvent
    * @param {string} ev
    */
-  public async refreshByEv(ev: string[]) {
+  public async refreshByEv(ev: EV[]) {
     const keys = await this.evKeyDic.get(ev);
 
     if (keys.length === 0) {

@@ -7,7 +7,7 @@ import { sleep } from '../src/util';
 async function rdsCacTest(redis: IORedis.Redis | redis.RedisClient) {
   await new IORedis().flushdb()
 
-  const rdscac = new RdsCac({
+  const rdscac = new RdsCac<'ev' | 'ev2'>({
     redis,
     expireIn: 86400,
     unique: ''
