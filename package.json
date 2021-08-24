@@ -1,6 +1,6 @@
 {
   "name": "rdscac",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "ISC",
   "author": "yxjorhs",
   "main": "dist/index.js",
