@@ -12,7 +12,7 @@ import {Redis} from './Redis';
 import {sleep} from './util';
 
 type RdsCacOpt = {
-  redis: Redis,
+  redis: (() => Redis) | Redis,
   expireIn: number,
   unique: string
 };
@@ -42,6 +42,14 @@ export class RdsCac<EV extends string> {
   constructor(private readonly opt: RdsCacOpt) {
     this.evKeyDic = new EvKeyDict(opt);
   };
+
+  private get redis() {
+    if(typeof this.opt.redis === 'function') {
+      return this.opt.redis()
+    }
+
+    return this.opt.redis
+  }
 
   /**
    * return cache
@@ -96,7 +104,7 @@ export class RdsCac<EV extends string> {
     let val: T;
     let isLoadVal = false;
 
-    const cac = (await promisify(this.opt.redis.hgetall)
+    const cac = (await promisify(this.redis.hgetall)
         .bind(this.opt.redis)(key)) as HashCache;
 
     if (cac !== null && cac.val !== undefined) {
@@ -114,7 +122,7 @@ export class RdsCac<EV extends string> {
       let isGetLock = false;
       try {
         // use redlock to avoid parallel request source
-        const lock = await new Redlock([this.opt.redis], {retryCount: 0})
+        const lock = await new Redlock([this.redis], {retryCount: 0})
             .lock(`refreshLock:${key}`, REFRESH_LOCK_TTL);
 
         isGetLock = true;
@@ -124,7 +132,7 @@ export class RdsCac<EV extends string> {
 
           isLoadVal = true;
 
-          const multi = this.opt.redis.multi()
+          const multi = this.redis.multi()
               .hset(
                   key,
                   'val',
@@ -152,7 +160,7 @@ export class RdsCac<EV extends string> {
         for (let i = 0; i < WAIT_TIMES; i++) {
           await sleep(WAIT_INTERVAL);
 
-          const cac = (await promisify(this.opt.redis.hgetall)
+          const cac = (await promisify(this.redis.hgetall)
               .bind(this.opt.redis)(key)) as HashCache;
 
           if (
@@ -171,7 +179,7 @@ export class RdsCac<EV extends string> {
     // ensure get data finally
     if (isLoadVal === false) {
       val = await source();
-      const multi = this.opt.redis.multi()
+      const multi = this.redis.multi()
           .hset(
               key,
               'val',
@@ -197,7 +205,7 @@ export class RdsCac<EV extends string> {
       return;
     }
 
-    const multi = this.opt.redis.multi();
+    const multi = this.redis.multi();
     for (let i = 0; i < keys.length; i++) {
       multi.hset(keys[i], 'signRefreshAt', Date.now());
       multi.expire(keys[i], this.opt.expireIn);

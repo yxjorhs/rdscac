@@ -10,7 +10,7 @@ import {promisify} from 'util';
 import {Redis} from './Redis';
 
 type EvKeyDictOption = {
-  redis: Redis,
+  redis: (() => Redis) | Redis,
   unique: string
 }
 
@@ -30,13 +30,21 @@ export class EvKeyDict {
   constructor(private readonly opt: EvKeyDictOption) {}
   private memDict: MemDict = {}
 
+  private get redis() {
+    if(typeof this.opt.redis === 'function') {
+      return this.opt.redis()
+    }
+
+    return this.opt.redis
+  }
+
   /**
    * build event => key
    * @param {string} key
    * @param {string[]} evs
    */
   public async add(key: string, evs: string[]): Promise<void> {
-    const multi = this.opt.redis.multi();
+    const multi = this.redis.multi();
     let needExec = false;
 
     for (const ev of evs) {
@@ -73,7 +81,7 @@ export class EvKeyDict {
         continue;
       }
 
-      const keys = await promisify(this.opt.redis.smembers)
+      const keys = await promisify(this.redis.smembers)
           .bind(this.opt.redis)(this.keyGet(ev));
 
       allKeys = allKeys.concat(keys);
