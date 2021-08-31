@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.4](https://github.com/yxjorhs/rdscac/compare/v0.0.3...v0.0.4) (2021-08-31)
+
+
+### Bug Fixes
+
+* opt.redis undefined ([3566e7f](https://github.com/yxjorhs/rdscac/commit/3566e7f3d951ad8f96ab6129608b0675ec73a6d1))
+
 ### [0.0.3](https://github.com/yxjorhs/rdscac/compare/v0.0.2...v0.0.3) (2021-08-30)
 
 
