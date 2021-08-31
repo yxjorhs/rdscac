@@ -35,7 +35,7 @@ const WAIT_INTERVAL = 100;
  */
 export class RdsCac<EV extends string> {
   private evKeyDic: EvKeyDict;
-  private redis: Redis;
+  private redisSource: (() => Redis) | Redis;
   private expireIn: number;
   private keyGet: (key: string) => string;
 
@@ -44,10 +44,14 @@ export class RdsCac<EV extends string> {
    */
   constructor(opt: RdsCacOpt) {
     this.evKeyDic = new EvKeyDict(opt);
-    this.redis = typeof opt.redis === 'function' ? opt.redis() : opt.redis
+    this.redisSource = opt.redis;
     this.expireIn = opt.expireIn
     this.keyGet = key => `RdsCac:${opt.unique}:${key}`
   };
+
+  private get redis() {
+    return typeof this.redisSource === 'function' ? this.redisSource() : this.redisSource
+  }
 
   /**
    * return cache

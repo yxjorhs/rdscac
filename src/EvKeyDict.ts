@@ -24,7 +24,7 @@ type MemDict = Record<string, {
  * event key dictionary
  */
 export class EvKeyDict {
-  private redis: Redis;
+  private redisSource: (() => Redis) | Redis;
   private memDict: MemDict = {}
   private keyGet: (key: string) => string;
 
@@ -32,8 +32,12 @@ export class EvKeyDict {
    * @param {EvKeyDictOption} opt
    */
   constructor(opt: EvKeyDictOption) {
-    this.redis = typeof opt.redis === 'function' ? opt.redis() : opt.redis;
+    this.redisSource = opt.redis;
     this.keyGet = key => `EvKeyDict:${opt.unique}:${key}`;
+  }
+
+  private get redis() {
+    return typeof this.redisSource === 'function' ? this.redisSource() : this.redisSource
   }
 
   /**
