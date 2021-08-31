@@ -35,21 +35,19 @@ const WAIT_INTERVAL = 100;
  */
 export class RdsCac<EV extends string> {
   private evKeyDic: EvKeyDict;
+  private redis: Redis;
+  private expireIn: number;
+  private keyGet: (key: string) => string;
 
   /**
    * @param {RdsCacOpt} opt
    */
-  constructor(private readonly opt: RdsCacOpt) {
+  constructor(opt: RdsCacOpt) {
     this.evKeyDic = new EvKeyDict(opt);
+    this.redis = typeof opt.redis === 'function' ? opt.redis() : opt.redis
+    this.expireIn = opt.expireIn
+    this.keyGet = key => `RdsCac:${opt.unique}:${key}`
   };
-
-  private get redis() {
-    if(typeof this.opt.redis === 'function') {
-      return this.opt.redis()
-    }
-
-    return this.opt.redis
-  }
 
   /**
    * return cache
@@ -105,7 +103,7 @@ export class RdsCac<EV extends string> {
     let isLoadVal = false;
 
     const cac = (await promisify(this.redis.hgetall)
-        .bind(this.opt.redis)(key)) as HashCache;
+        .bind(this.redis)(key)) as HashCache;
 
     if (cac !== null && cac.val !== undefined) {
       val = JSON.parse(cac.val);
@@ -140,7 +138,7 @@ export class RdsCac<EV extends string> {
                   'refreshAt',
                   Date.now().toString(),
               )
-              .expire(key, this.opt.expireIn);
+              .expire(key, this.expireIn);
 
           await promisify(multi.exec).bind(multi)();
         } finally {
@@ -161,7 +159,7 @@ export class RdsCac<EV extends string> {
           await sleep(WAIT_INTERVAL);
 
           const cac = (await promisify(this.redis.hgetall)
-              .bind(this.opt.redis)(key)) as HashCache;
+              .bind(this.redis)(key)) as HashCache;
 
           if (
             cac &&
@@ -187,7 +185,7 @@ export class RdsCac<EV extends string> {
               'refreshAt',
               Date.now().toString(),
           )
-          .expire(key, this.opt.expireIn);
+          .expire(key, this.expireIn);
       await promisify(multi.exec).bind(multi)();
     }
 
@@ -208,17 +206,8 @@ export class RdsCac<EV extends string> {
     const multi = this.redis.multi();
     for (let i = 0; i < keys.length; i++) {
       multi.hset(keys[i], 'signRefreshAt', Date.now());
-      multi.expire(keys[i], this.opt.expireIn);
+      multi.expire(keys[i], this.expireIn);
     }
     await promisify(multi.exec).bind(multi)();
-  }
-
-  /**
-   * fill keyPrefix
-   * @param {string} key
-   * @return {string}
-   */
-  private keyGet(key: string): string {
-    return `RdsCac:${this.opt.unique}:${key}`;
   }
 }

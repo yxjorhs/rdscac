@@ -24,18 +24,16 @@ type MemDict = Record<string, {
  * event key dictionary
  */
 export class EvKeyDict {
+  private redis: Redis;
+  private memDict: MemDict = {}
+  private keyGet: (key: string) => string;
+
   /**
    * @param {EvKeyDictOption} opt
    */
-  constructor(private readonly opt: EvKeyDictOption) {}
-  private memDict: MemDict = {}
-
-  private get redis() {
-    if(typeof this.opt.redis === 'function') {
-      return this.opt.redis()
-    }
-
-    return this.opt.redis
+  constructor(opt: EvKeyDictOption) {
+    this.redis = typeof opt.redis === 'function' ? opt.redis() : opt.redis;
+    this.keyGet = key => `EvKeyDict:${opt.unique}:${key}`;
   }
 
   /**
@@ -82,7 +80,7 @@ export class EvKeyDict {
       }
 
       const keys = await promisify(this.redis.smembers)
-          .bind(this.opt.redis)(this.keyGet(ev));
+          .bind(this.redis)(this.keyGet(ev));
 
       allKeys = allKeys.concat(keys);
 
@@ -99,14 +97,6 @@ export class EvKeyDict {
     }
 
     return allKeys;
-  }
-
-  /**
-   * @param {string} ev
-   * @return {string}
-   */
-  private keyGet(ev: string): string {
-    return `EvKeyDict:${this.opt.unique}:${ev}`;
   }
 
   /**
